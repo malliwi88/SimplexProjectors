@@ -20,6 +20,7 @@ class BarebonesOptimizer:
         self.corr = corr
         self.n = len(asset_returns)
         self.returns = asset_returns
+        self.swarm_size = swarm_size
         self.swarm = []
         for i in range(swarm_size):
             ones = numpy.ones(self.n)
@@ -30,23 +31,22 @@ class BarebonesOptimizer:
             best_index = 0
             best_weights = None
             best_fitness = float('+inf')
-            for j in range(self.n):
+            for j in range(self.swarm_size):
                 portfolio = Portfolio(self.returns, self.corr, self.swarm[j])
-                fitness = portfolio.min_objective()
+                fitness = portfolio.repair_objective()
+                self.swarm[j] = portfolio.weights
+                # print(numpy.sum(self.swarm[j]), list(self.swarm[j]))
                 if fitness < best_fitness:
                     best_weights = self.swarm[j]
                     best_fitness = fitness
                     best_index = j
-            for j in range(self.n):
+            for j in range(self.swarm_size):
                 if j != best_index:
                     loc = numpy.array((best_weights + self.swarm[j]) / 2.0)
                     velocity = numpy.empty(len(best_weights))
                     for k in range(len(best_weights)):
                         velocity[k] = random.normalvariate(loc[k], 0.05)
                     self.swarm[j] += velocity
-                    portfolio = Portfolio(self.returns, self.corr, self.swarm[j])
-                    portfolio.repair()
-                    self.swarm[j] = portfolio.weights
             if i % 25 == 0:
                 print("Repair", i, best_fitness, numpy.sum(best_weights))
 
@@ -55,14 +55,14 @@ class BarebonesOptimizer:
             best_index = 0
             best_weights = None
             best_fitness = float('+inf')
-            for j in range(self.n):
+            for j in range(self.swarm_size):
                 portfolio = Portfolio(self.returns, self.corr, self.swarm[j])
                 fitness = portfolio.lagrange_objective()
                 if fitness < best_fitness:
                     best_weights = self.swarm[j]
                     best_fitness = fitness
                     best_index = j
-            for j in range(self.n):
+            for j in range(self.swarm_size):
                 if j != best_index:
                     loc = numpy.array((best_weights + self.swarm[j]) / 2.0)
                     velocity = numpy.empty(len(best_weights))
@@ -77,14 +77,14 @@ class BarebonesOptimizer:
             best_index = 0
             best_weights = None
             best_fitness = float('+inf')
-            for j in range(self.n):
+            for j in range(self.swarm_size):
                 portfolio = Portfolio(self.returns, self.corr, self.swarm[j])
                 fitness = portfolio.min_objective()
                 if fitness < best_fitness:
                     best_weights = self.swarm[j]
                     best_fitness = fitness
                     best_index = j
-            for j in range(self.n):
+            for j in range(self.swarm_size):
                 if j != best_index:
                     r = nrand.dirichlet(numpy.ones(self.n), 1)[0] - float(1/self.n)
                     velocity = numpy.array(best_weights - self.swarm[j]) + r
