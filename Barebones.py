@@ -16,7 +16,6 @@ from Portfolio import Portfolio
 
 class BarebonesOptimizer:
     def __init__(self, swarm_size, asset_returns, corr):
-        nrand.seed(seed=123456)
         self.corr = corr
         self.n = len(asset_returns)
         self.returns = asset_returns
@@ -27,6 +26,7 @@ class BarebonesOptimizer:
             self.swarm.append(nrand.dirichlet(ones, 1)[0])
 
     def optimize_repair(self, iterations):
+        history = numpy.zeros(iterations)
         for i in range(iterations):
             best_index = 0
             best_weights = None
@@ -47,10 +47,11 @@ class BarebonesOptimizer:
                     for k in range(len(best_weights)):
                         velocity[k] = random.normalvariate(loc[k], 0.05)
                     self.swarm[j] += velocity
-            if i % 25 == 0:
-                print("Repair", i, best_fitness, numpy.sum(best_weights))
+            history[i] = best_fitness
+        return history
 
     def optimize_lagrange(self, iterations):
+        history = numpy.zeros(iterations)
         for i in range(iterations):
             best_index = 0
             best_weights = None
@@ -69,10 +70,11 @@ class BarebonesOptimizer:
                     for k in range(len(best_weights)):
                         velocity[k] = random.normalvariate(loc[k], 0.05)
                     self.swarm[j] = velocity
-            if i % 25 == 0:
-                print("Lagrange", i, best_fitness, numpy.sum(best_weights))
+            history[i] = best_fitness
+        return history
 
     def optimize_preserving(self, iterations):
+        history = numpy.zeros(iterations)
         for i in range(iterations):
             best_index = 0
             best_weights = None
@@ -89,5 +91,5 @@ class BarebonesOptimizer:
                     r = nrand.dirichlet(numpy.ones(self.n), 1)[0] - float(1/self.n)
                     velocity = numpy.array(best_weights - self.swarm[j]) + r
                     self.swarm[j] += velocity
-            if i % 25 == 0:
-                print("Preserving", i, best_fitness, numpy.sum(best_weights))
+            history[i] = best_fitness
+        return history

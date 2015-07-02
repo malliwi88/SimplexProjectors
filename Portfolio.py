@@ -9,8 +9,11 @@ import math
 import numpy
 
 
+memoizer = {}
+
+
 class Portfolio:
-    def __init__(self, asset_returns, corr, weights=None):
+    def __init__(self, asset_returns, corr, weights, r=3):
         """
         This method constructs a portfolio
         :param asset_returns: list of numpy vectors of historical / simulated returns
@@ -29,12 +32,8 @@ class Portfolio:
             self.expected_return[i] = numpy.mean(asset_returns[i])
             self.expected_risk[i] = numpy.std(asset_returns[i])
         # Construct the initial weights
-        if weights is None:
-            self.weights = numpy.empty(self.n)
-            equal_weight_const = float(1 / self.n)
-            self.weights.fill(equal_weight_const)
-        else:
-            self.weights = weights
+        self.weights = numpy.around(weights, r)
+        self.hash = hash(tuple(self.weights))
 
     def portfolio_return(self):
         """
@@ -51,9 +50,10 @@ class Portfolio:
         variance = numpy.sum(numpy.dot(self.weights**2, self.expected_risk**2))
         for i in range(self.n):
             for j in range(self.n):
-                weights_ij = self.weights[i] * self.weights[j]
-                risks_ij = self.expected_risk[i] * self.expected_risk[j]
-                variance += weights_ij * risks_ij * self.corr[i][j]
+                if i != j:
+                    weights_ij = self.weights[i] * self.weights[j]
+                    risks_ij = self.expected_risk[i] * self.expected_risk[j]
+                    variance += weights_ij * risks_ij * self.corr[i][j]
         return math.sqrt(variance)
 
     def repair(self):
@@ -76,7 +76,13 @@ class Portfolio:
         Returns the negative of the max_objective
         :return: - expected sharpe ratio
         """
-        return -self.max_objective()
+        try:
+            res = memoizer[self.hash]
+            return res
+        except KeyError:
+            min_opt = -self.max_objective()
+            memoizer[self.hash] = min_opt
+            return min_opt
 
     def lagrange_objective(self):
         """
@@ -90,10 +96,9 @@ class Portfolio:
         self.repair()
         return self.min_objective()
 
-
-def returns_to_prices(returns):
-    prices = numpy.empty(len(returns) + 1)
-    prices[0] = 100
-    for i in range(len(returns)):
-        prices[i + 1] = prices[i] * math.exp(returns[i])
-    return prices
+    def returns_to_prices(self, returns):
+        prices = numpy.empty(len(returns) + 1)
+        prices[0] = 100
+        for i in range(len(returns)):
+            prices[i + 1] = prices[i] * math.exp(returns[i])
+        return prices
