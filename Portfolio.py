@@ -61,10 +61,7 @@ class Portfolio:
         Repairs the portfolio weights using normalization by the sum of weights
         :return: the normalized / repaired portfolio weights
         """
-        sum_weights = float(numpy.sum(self.weights))
-        sum_vector = numpy.empty(self.n)
-        sum_vector.fill(sum_weights)
-        self.weights = self.weights / sum_vector
+        self.weights /= numpy.sum(self.weights)
 
     def max_objective(self, risk_free_rate=0.00):
         """
@@ -88,6 +85,10 @@ class Portfolio:
         """
         penalty = 1 - float(numpy.sum(self.weights))
         return self.min_objective() + numpy.abs(penalty)
+
+    def repair_objective(self):
+        self.repair()
+        return self.min_objective()
 
 
 def returns_to_prices(returns):
