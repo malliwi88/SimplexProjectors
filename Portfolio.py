@@ -102,3 +102,11 @@ class Portfolio:
         for i in range(len(returns)):
             prices[i + 1] = prices[i] * math.exp(returns[i])
         return prices
+
+    def get_fitness(self, method):
+        fitness = self.min_objective()
+        if method == "repair":
+            fitness = self.repair_objective()
+        if method == "lagrange":
+            fitness = self.lagrange_objective()
+        return fitness

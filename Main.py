@@ -91,7 +91,8 @@ def runner(n, sigma, delta, mu, time, iterations=30):
     asset_simulator = AssetSimulator(delta, sigma, mu, time)
 
     Portfolio.memoizer = {}
-    lagrange, repair, preserve, ss = [], [], [], 25
+    none, lagrange, repair, preserve, ss = [], [], [], [], 25
+    none_v, lagrange_v, repair_v, preserve_v = [], [], [], []
 
     for i in range(iterations):
         print("Iteration", i, "Simulating Returns ...")
@@ -99,29 +100,58 @@ def runner(n, sigma, delta, mu, time, iterations=30):
         corr = pandas.DataFrame(asset_returns).transpose().corr()
         # three_dimensional_landscape(asset_returns, corr, 100)
 
+        print("Iteration", i, "Starting Optimizer ...")
+        none_opt = BarebonesOptimizer(ss, asset_returns, corr)
+        result, violation = none_opt.optimize_none(201)
+        none_v.append(violation)
+        none.append(result)
+
         print("Iteration", i, "Starting Lagrange Optimizer ...")
         lagrange_opt = BarebonesOptimizer(ss, asset_returns, corr)
-        lagrange.append(lagrange_opt.optimize_lagrange(501))
+        result, violation = lagrange_opt.optimize_lagrange(201)
+        lagrange_v.append(violation)
+        lagrange.append(result)
 
         print("Iteration", i, "Starting Repair Method Optimizer ...")
         repair_opt = BarebonesOptimizer(ss, asset_returns, corr)
-        repair.append(repair_opt.optimize_preserving(501))
+        result, violation = repair_opt.optimize_repair(201)
+        repair_v.append(violation)
+        repair.append(result)
 
         print("Iteration", i, "Starting Preserving Feasibility Optimizer ...")
         preserve_opt = BarebonesOptimizer(ss, asset_returns, corr)
-        preserve.append(preserve_opt.optimize_repair(501))
+        result, violation = preserve_opt.optimize_preserving(201)
+        preserve_v.append(violation)
+        preserve.append(result)
 
-    lagrange_data = pandas.DataFrame(lagrange).transpose()
-    lagrange_data.to_csv("Results/Lagrange_" + str(n) + ".csv")
+    n_r = pandas.DataFrame(none)
+    n_r.to_csv("Results/Results_None_" + str(n) + ".csv")
 
-    repair_data = pandas.DataFrame(repair).transpose()
-    repair_data.to_csv("Results/Repair_" + str(n) + ".csv")
+    n_v = pandas.DataFrame(none_v)
+    n_v.to_csv("Results/Violations_None_" + str(n) + ".csv")
 
-    preserve_data = pandas.DataFrame(preserve).transpose()
-    preserve_data.to_csv("Results/Preserve_" + str(n) + ".csv")
+    l_r = pandas.DataFrame(lagrange)
+    l_r.to_csv("Results/Results_Lagrange_" + str(n) + ".csv")
 
-    return lagrange_data, repair_data, preserve_data
+    l_v = pandas.DataFrame(lagrange_v)
+    l_v.to_csv("Results/Violations_Lagrange_" + str(n) + ".csv")
+
+    r_r = pandas.DataFrame(repair)
+    r_r.to_csv("Results/Results_Repair_" + str(n) + ".csv")
+
+    r_v = pandas.DataFrame(repair_v)
+    r_v.to_csv("Results/Violations_Repair_" + str(n) + ".csv")
+
+    p_r = pandas.DataFrame(preserve)
+    p_r.to_csv("Results/Results_Preserve_" + str(n) + ".csv")
+
+    p_v = pandas.DataFrame(preserve_v)
+    p_v.to_csv("Results/Violations_Preserve_" + str(n) + ".csv")
+
+    plot_results([n_r.mean(), l_r.mean(), r_r.mean(), p_r.mean()], ["none", "lagrange", "repair", "preserving"])
+    plot_results([n_r.std(), l_r.std(), r_r.std(), p_r.std()], ["none", "lagrange", "repair", "preserving"])
+    plot_results([n_v.std(), l_v.std(), p_v.std()], ["none", "lagrange", "preserving"])
+
 
 if __name__ == '__main__':
-    l, r, p = runner(8, 0.125, float(1/252), 0.08, 500, iterations=1)
-    plot_results([l[0], r[0], p[0]], ["lagrange", "repair", "preserving"])
+    runner(8, 0.125, float(1/252), 0.08, 250, iterations=5)
