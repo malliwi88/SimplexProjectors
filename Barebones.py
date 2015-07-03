@@ -7,7 +7,6 @@ lagrange multipliers method. These results are compared to the implementation of
 Particle Swarm Optimization algorithm which uses a preserving feasibility constraint satisfaction technique.
 """
 
-
 import numpy
 import random
 import numpy.random as nrand
@@ -28,47 +27,29 @@ class BarebonesOptimizer:
     def optimize_repair(self, iterations):
         history = numpy.zeros(iterations)
         for i in range(iterations):
-            best_index = 0
-            best_weights = None
-            best_fitness = float('+inf')
-            for j in range(self.swarm_size):
-                portfolio = Portfolio(self.returns, self.corr, self.swarm[j])
-                fitness = portfolio.repair_objective()
-                self.swarm[j] = portfolio.weights
-                # print(numpy.sum(self.swarm[j]), list(self.swarm[j]))
-                if fitness < best_fitness:
-                    best_weights = self.swarm[j]
-                    best_fitness = fitness
-                    best_index = j
+            best_index, best_weights, best_fitness = self.get_best("repair")
             for j in range(self.swarm_size):
                 if j != best_index:
                     loc = numpy.array((best_weights + self.swarm[j]) / 2.0)
+                    sig = numpy.array(numpy.abs(best_weights - self.swarm[j]))
                     velocity = numpy.empty(len(best_weights))
                     for k in range(len(best_weights)):
-                        velocity[k] = random.normalvariate(loc[k], 0.05)
-                    self.swarm[j] += velocity
+                        velocity[k] = random.normalvariate(loc[k], sig[k])
+                    self.swarm[j] = velocity
             history[i] = best_fitness
         return history
 
     def optimize_lagrange(self, iterations):
         history = numpy.zeros(iterations)
         for i in range(iterations):
-            best_index = 0
-            best_weights = None
-            best_fitness = float('+inf')
-            for j in range(self.swarm_size):
-                portfolio = Portfolio(self.returns, self.corr, self.swarm[j])
-                fitness = portfolio.lagrange_objective()
-                if fitness < best_fitness:
-                    best_weights = self.swarm[j]
-                    best_fitness = fitness
-                    best_index = j
+            best_index, best_weights, best_fitness = self.get_best("lagrange")
             for j in range(self.swarm_size):
                 if j != best_index:
                     loc = numpy.array((best_weights + self.swarm[j]) / 2.0)
+                    sig = numpy.array(numpy.abs(best_weights - self.swarm[j]))
                     velocity = numpy.empty(len(best_weights))
                     for k in range(len(best_weights)):
-                        velocity[k] = random.normalvariate(loc[k], 0.05)
+                        velocity[k] = random.normalvariate(loc[k], sig[k])
                     self.swarm[j] = velocity
             history[i] = best_fitness
         return history
@@ -76,20 +57,33 @@ class BarebonesOptimizer:
     def optimize_preserving(self, iterations):
         history = numpy.zeros(iterations)
         for i in range(iterations):
-            best_index = 0
-            best_weights = None
-            best_fitness = float('+inf')
-            for j in range(self.swarm_size):
-                portfolio = Portfolio(self.returns, self.corr, self.swarm[j])
-                fitness = portfolio.min_objective()
-                if fitness < best_fitness:
-                    best_weights = self.swarm[j]
-                    best_fitness = fitness
-                    best_index = j
+            best_index, best_weights, best_fitness = self.get_best("preserving")
             for j in range(self.swarm_size):
                 if j != best_index:
-                    r = nrand.dirichlet(numpy.ones(self.n), 1)[0] - float(1/self.n)
+                    r = nrand.dirichlet(numpy.ones(self.n), 1)[0] - float(1 / self.n)
                     velocity = numpy.array(best_weights - self.swarm[j]) + r
                     self.swarm[j] += velocity
             history[i] = best_fitness
         return history
+
+    def get_best(self, objective):
+        best_index, best_weights, best_fitness = 0, None, float('+inf')
+        for j in range(self.swarm_size):
+            portfolio = Portfolio(self.returns, self.corr, self.swarm[j])
+            fitness = self.get_fitness(portfolio, objective)
+            if objective == "repair":
+                self.swarm[j] = portfolio.weights
+            if fitness < best_fitness:
+                best_weights, best_fitness, best_index = self.swarm[j], fitness, j
+        return best_index, best_weights, best_fitness
+
+    def get_fitness(self, portfolio, objective):
+        if objective == "repair":
+            fitness = portfolio.repair_objective()
+        elif objective == "lagrange":
+            fitness = portfolio.lagrange_objective()
+        elif objective == "preserving":
+            fitness = portfolio.min_objective()
+        else:
+            print("Unknown objective function")
+        return fitness

@@ -21,11 +21,15 @@ def plot_paths(r, sim):
     plt.show()
 
 
-def plot_results(results):
+def plot_results(results, labels=None):
     plt.ylabel("- Sharpe Ratio")
     plt.xlabel("Iterations")
-    for r in results:
-        plt.plot(r)
+    for i in range(len(results)):
+        if labels is None:
+            plt.plot(results[i])
+        else:
+            plt.plot(results[i], label=labels[i])
+    plt.legend(loc="best")
     plt.show()
 
 
@@ -97,15 +101,15 @@ def runner(n, sigma, delta, mu, time, iterations=30):
 
         print("Iteration", i, "Starting Lagrange Optimizer ...")
         lagrange_opt = BarebonesOptimizer(ss, asset_returns, corr)
-        lagrange.append(lagrange_opt.optimize_lagrange(5001))
+        lagrange.append(lagrange_opt.optimize_lagrange(501))
 
         print("Iteration", i, "Starting Repair Method Optimizer ...")
         repair_opt = BarebonesOptimizer(ss, asset_returns, corr)
-        repair.append(repair_opt.optimize_preserving(5001))
+        repair.append(repair_opt.optimize_preserving(501))
 
         print("Iteration", i, "Starting Preserving Feasibility Optimizer ...")
         preserve_opt = BarebonesOptimizer(ss, asset_returns, corr)
-        preserve.append(preserve_opt.optimize_repair(5001))
+        preserve.append(preserve_opt.optimize_repair(501))
 
     lagrange_data = pandas.DataFrame(lagrange).transpose()
     lagrange_data.to_csv("Results/Lagrange_" + str(n) + ".csv")
@@ -116,9 +120,8 @@ def runner(n, sigma, delta, mu, time, iterations=30):
     preserve_data = pandas.DataFrame(preserve).transpose()
     preserve_data.to_csv("Results/Preserve_" + str(n) + ".csv")
 
+    return lagrange_data, repair_data, preserve_data
+
 if __name__ == '__main__':
-    runner(2, 0.125, float(1/252), 0.08, 500)
-    runner(4, 0.125, float(1/252), 0.08, 500)
-    runner(8, 0.125, float(1/252), 0.08, 500)
-    runner(16, 0.125, float(1/252), 0.08, 500)
-    runner(32, 0.125, float(1/252), 0.08, 500)
+    l, r, p = runner(8, 0.125, float(1/252), 0.08, 500, iterations=1)
+    plot_results([l[0], r[0], p[0]], ["lagrange", "repair", "preserving"])
