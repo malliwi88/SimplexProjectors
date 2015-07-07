@@ -10,6 +10,7 @@ import Portfolio
 import cProfile
 import pandas
 import numpy
+from matplotlib.ticker import LinearLocator, FormatStrFormatter
 
 
 def plot_paths(r, sim):
@@ -54,37 +55,48 @@ def two_dimensional_landscape(returns, corr_m, size):
     plt.show()
 
 
-def three_dimensional_landscape(returns, corr_m, size):
+def three_dimensional_landscape(returns, corr_m, size, c_e=1.0, c_b=1.0, m_e=1.0, m_b=1.0):
     """
     This method plots the fitness landscape for each three methods in three dimensions (surface plot)
     """
     step = float(1/size)
-    x_axis = numpy.arange(step, 1 + step, step)
-    y_axis = numpy.arange(step, 1 + step, step)
+    x_axis = numpy.arange(-0.5, 1.5, 2*step)
+    y_axis = numpy.arange(-0.5, 1.5, 2*step)
     z_axis_nochange = numpy.zeros(shape=(size, size))
     z_axis_repaired = numpy.zeros(shape=(size, size))
+    z_axis_penaltym = numpy.zeros(shape=(size, size))
     z_axis_lagrange = numpy.zeros(shape=(size, size))
     for i in range(size):
         for j in range(size):
             x, y = x_axis[i], y_axis[j]
             p = Portfolio.Portfolio(returns, corr_m, numpy.array([x, y]))
-            z_axis_lagrange[i][j] = p.lagrange_objective()
             z_axis_nochange[i][j] = p.min_objective()
+            z_axis_penaltym[i][j] = p.penalty_objective(c_e, c_b)
+            z_axis_lagrange[i][j] = p.lagrange_objective(c_e, c_b, m_e, m_b)
             z_axis_repaired[i][j] = p.repair_objective()
     x_axis, y_axis = numpy.meshgrid(x_axis, y_axis)
-    plot_surface(x_axis, y_axis, z_axis_nochange)
-    plot_surface(x_axis, y_axis, z_axis_repaired)
-    plot_surface(x_axis, y_axis, z_axis_lagrange)
+    plot_surface(x_axis, y_axis, z_axis_nochange, "N")
+    plot_surface(x_axis, y_axis, z_axis_repaired, "R")
+    plot_surface(x_axis, y_axis, z_axis_penaltym, "P")
+    plot_surface(x_axis, y_axis, z_axis_lagrange, "L")
 
 
-def plot_surface(X, Y, Z):
+def plot_surface(X, Y, Z, label):
     """
     This method actually plots and shows the three dimensional surface
     """
-    fig = plt.figure()
+    fig = plt.figure(figsize=(15, 10))
     ax = fig.gca(projection='3d')
     surf = ax.plot_surface(X, Y, Z, cmap=cm.coolwarm, linewidth=0)
-    fig.colorbar(surf)
+    ax.zaxis.set_major_locator(LinearLocator(10))
+    ax.zaxis.set_major_formatter(FormatStrFormatter('%.02f'))
+
+    fig.colorbar(surf, shrink=0.5, aspect=5)
+    '''
+    for ii in range(0, 360, 90):
+        ax.view_init(elev=10., azim=ii)
+        plt.savefig("Views/View II " + label + " " + str(ii) + ".png")
+    '''
     plt.show()
 
 
@@ -154,13 +166,13 @@ def runner(n, sigma, delta, mu, time, iterations=30):
     plot_results([n_v.std(), l_v.std(), p_v.std()], ["none", "lagrange", "preserving"])
 
 
-def surface_plotter(n, sigma, delta, mu, time):
+def surface_plotter(n, sigma, delta, mu, time, c_e, c_b, m_e, m_b):
     asset_simulator = AssetSimulator(delta, sigma, mu, time)
     asset_returns = asset_simulator.assets_returns(n)
     corr = pandas.DataFrame(asset_returns).transpose().corr()
-    three_dimensional_landscape(asset_returns, corr, 100)
+    three_dimensional_landscape(asset_returns, corr, 200, c_e, c_b, m_e, m_b)
 
 
 if __name__ == '__main__':
     # runner(8, 0.125, float(1/252), 0.08, 250, iterations=5)
-    surface_plotter(2, 0.125, float(1/252), 0.08, 250)
+    surface_plotter(2, 0.125, float(1/252), 0.08, 250, 2.0, 2.0, 0.5, 0.5)

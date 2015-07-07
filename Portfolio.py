@@ -57,13 +57,6 @@ class Portfolio:
                     variance += weights_ij * risks_ij * self.corr[i][j]
         return math.sqrt(variance)
 
-    def repair(self):
-        """
-        Repairs the portfolio weights using normalization by the sum of weights
-        :return: the normalized / repaired portfolio weights
-        """
-        self.weights /= numpy.sum(self.weights)
-
     def max_objective(self, risk_free_rate=0.00):
         """
         Returns the expected sharpe ratio
@@ -88,22 +81,40 @@ class Portfolio:
         else:
             return -self.max_objective()
 
-    def lagrange_objective(self):
+    def penalty_objective(self, coefficient_e, coefficient_b):
         """
         Returns - expected sharpe ratio plus a weight penalty
         :return: the lagrange method objective
         """
-        penalty = 1.0 - float(numpy.sum(self.weights))
-        fitness = self.min_objective() + pow(penalty, 2.0)
+        penalty_e = self.get_equality_penalty()
+        penalty_b = self.get_boundary_penalty()
+        fitness = self.min_objective()
+        fitness += (coefficient_e * pow(penalty_e, 2.0))
+        fitness += (coefficient_b * pow(penalty_b, 2.0))
         return fitness
 
-    def lagrange_objective_orig(self):
+    def lagrange_objective(self, coefficient_e, coefficient_b, multiplier_e, multiplier_b):
         """
         Returns - expected sharpe ratio plus a weight penalty
         :return: the lagrange method objective
         """
-        penalty = 1 - float(numpy.sum(self.weights))
-        return self.min_objective() + numpy.abs(penalty)
+        penalty_e = self.get_equality_penalty()
+        penalty_b = self.get_boundary_penalty()
+        fitness = self.min_objective()
+        fitness += (float(coefficient_e/2.0) * pow(penalty_e, 2.0))
+        fitness += (float(coefficient_b/2.0) * pow(penalty_b, 2.0))
+        fitness -= (multiplier_e * pow(penalty_e, 2.0))
+        fitness -= (multiplier_b * pow(penalty_b, 2.0))
+        return fitness
+
+    def repair(self):
+        """
+        Repairs the portfolio weights using normalization by the sum of weights
+        :return: the normalized / repaired portfolio weights
+        """
+        for w in range(len(self.weights)):
+            self.weights[w] = max(self.weights[w], 0)
+        self.weights /= numpy.sum(self.weights)
 
     def repair_objective(self):
         self.repair()
@@ -116,10 +127,24 @@ class Portfolio:
             prices[i + 1] = prices[i] * math.exp(returns[i])
         return prices
 
-    def get_fitness(self, method):
+    def get_fitness(self, method, coefficient_e=1.0, coefficient_b=1.0, multiplier_e=1.0, multiplier_b=1.0):
         fitness = self.min_objective()
         if method == "repair":
             fitness = self.repair_objective()
+        if method == "penalty":
+            fitness = self.penalty_objective(coefficient_e, coefficient_b)
         if method == "lagrange":
-            fitness = self.lagrange_objective()
+            fitness = self.lagrange_objective(coefficient_e, coefficient_b, multiplier_e, multiplier_b)
         return fitness
+
+    def get_equality_penalty(self):
+        return 1.0 - float(numpy.sum(self.weights))
+
+    def get_boundary_penalty(self):
+        penalty = 0.0
+        for w in self.weights:
+            if w < 0.0:
+                penalty += abs(w)
+            if w > 1.0:
+                penalty += w - 1.0
+        return penalty
