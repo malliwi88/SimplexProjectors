@@ -9,6 +9,7 @@ import math
 import numpy
 
 
+memoize = False
 memoizer = {}
 
 
@@ -76,15 +77,27 @@ class Portfolio:
         Returns the negative of the max_objective
         :return: - expected sharpe ratio
         """
-        try:
-            res = memoizer[self.hash]
-            return res
-        except KeyError:
-            min_opt = -self.max_objective()
-            memoizer[self.hash] = min_opt
-            return min_opt
+        if memoize:
+            try:
+                res = memoizer[self.hash]
+                return res
+            except KeyError:
+                min_opt = -self.max_objective()
+                memoizer[self.hash] = min_opt
+                return min_opt
+        else:
+            return -self.max_objective()
 
     def lagrange_objective(self):
+        """
+        Returns - expected sharpe ratio plus a weight penalty
+        :return: the lagrange method objective
+        """
+        penalty = 1.0 - float(numpy.sum(self.weights))
+        fitness = self.min_objective() + pow(penalty, 2.0)
+        return fitness
+
+    def lagrange_objective_orig(self):
         """
         Returns - expected sharpe ratio plus a weight penalty
         :return: the lagrange method objective

@@ -5,6 +5,7 @@ from AssetSimulator import AssetSimulator
 from Barebones import BarebonesOptimizer
 import matplotlib.pyplot as plt
 from matplotlib import cm
+from mpl_toolkits.mplot3d import Axes3D
 import Portfolio
 import cProfile
 import pandas
@@ -72,7 +73,7 @@ def three_dimensional_landscape(returns, corr_m, size):
             z_axis_repaired[i][j] = p.repair_objective()
     x_axis, y_axis = numpy.meshgrid(x_axis, y_axis)
     plot_surface(x_axis, y_axis, z_axis_nochange)
-    plot_surface(x_axis, y_axis, z_axis_nochange)
+    plot_surface(x_axis, y_axis, z_axis_repaired)
     plot_surface(x_axis, y_axis, z_axis_lagrange)
 
 
@@ -153,5 +154,13 @@ def runner(n, sigma, delta, mu, time, iterations=30):
     plot_results([n_v.std(), l_v.std(), p_v.std()], ["none", "lagrange", "preserving"])
 
 
+def surface_plotter(n, sigma, delta, mu, time):
+    asset_simulator = AssetSimulator(delta, sigma, mu, time)
+    asset_returns = asset_simulator.assets_returns(n)
+    corr = pandas.DataFrame(asset_returns).transpose().corr()
+    three_dimensional_landscape(asset_returns, corr, 100)
+
+
 if __name__ == '__main__':
-    runner(8, 0.125, float(1/252), 0.08, 250, iterations=5)
+    # runner(8, 0.125, float(1/252), 0.08, 250, iterations=5)
+    surface_plotter(2, 0.125, float(1/252), 0.08, 250)
