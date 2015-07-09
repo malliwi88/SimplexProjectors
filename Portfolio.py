@@ -89,8 +89,8 @@ class Portfolio:
         penalty_e = self.get_equality_penalty()
         penalty_b = self.get_boundary_penalty()
         fitness = self.min_objective()
-        fitness += (coefficient_e * pow(penalty_e, 2.0))
-        fitness += (coefficient_b * pow(penalty_b, 2.0))
+        fitness += coefficient_e * penalty_e
+        fitness += coefficient_b * penalty_b
         return fitness
 
     def lagrange_objective(self, coefficient_e, coefficient_b, multiplier_e, multiplier_b):
@@ -101,10 +101,10 @@ class Portfolio:
         penalty_e = self.get_equality_penalty()
         penalty_b = self.get_boundary_penalty()
         fitness = self.min_objective()
-        fitness += (float(coefficient_e/2.0) * pow(penalty_e, 2.0))
-        fitness += (float(coefficient_b/2.0) * pow(penalty_b, 2.0))
-        fitness -= (multiplier_e * pow(penalty_e, 2.0))
-        fitness -= (multiplier_b * pow(penalty_b, 2.0))
+        fitness += float(coefficient_e/2.0) * penalty_e
+        fitness += float(coefficient_b/2.0) * penalty_b
+        fitness -= multiplier_e * penalty_e
+        fitness -= multiplier_b * penalty_b
         return fitness
 
     def repair(self):
@@ -138,7 +138,7 @@ class Portfolio:
         return fitness
 
     def get_equality_penalty(self):
-        return 1.0 - float(numpy.sum(self.weights))
+        return math.pow(1.0 - float(numpy.sum(self.weights)), 2.0)
 
     def get_boundary_penalty(self):
         penalty = 0.0
@@ -147,4 +147,4 @@ class Portfolio:
                 penalty += abs(w)
             if w > 1.0:
                 penalty += w - 1.0
-        return penalty
+        return math.pow(penalty, 2.0)

@@ -60,8 +60,8 @@ def three_dimensional_landscape(returns, corr_m, size, c_e=1.0, c_b=1.0, m_e=1.0
     This method plots the fitness landscape for each three methods in three dimensions (surface plot)
     """
     step = float(1/size)
-    x_axis = numpy.arange(-0.5, 1.5, 2*step)
-    y_axis = numpy.arange(-0.5, 1.5, 2*step)
+    x_axis = numpy.arange(0.0, 1.0, step)
+    y_axis = numpy.arange(0.0, 1.0, step)
     z_axis_nochange = numpy.zeros(shape=(size, size))
     z_axis_repaired = numpy.zeros(shape=(size, size))
     z_axis_penaltym = numpy.zeros(shape=(size, size))
@@ -175,4 +175,4 @@ def surface_plotter(n, sigma, delta, mu, time, c_e, c_b, m_e, m_b):
 
 if __name__ == '__main__':
     # runner(8, 0.125, float(1/252), 0.08, 250, iterations=5)
-    surface_plotter(2, 0.125, float(1/252), 0.08, 250, 2.0, 2.0, 0.5, 0.5)
+    surface_plotter(2, 0.125, float(1/252), 0.08, 250, 2.0, 2.0, -20.0, -20.0)
