@@ -81,7 +81,7 @@ class Portfolio:
         else:
             return -self.max_objective()
 
-    def penalty_objective(self, coefficient_e, coefficient_b):
+    def penalty_objective(self, ce, cb):
         """
         Returns - expected sharpe ratio plus a weight penalty
         :return: the lagrange method objective
@@ -89,11 +89,11 @@ class Portfolio:
         penalty_e = self.get_equality_penalty()
         penalty_b = self.get_boundary_penalty()
         fitness = self.min_objective()
-        fitness += coefficient_e * penalty_e
-        fitness += coefficient_b * penalty_b
+        fitness += ce * penalty_e
+        fitness += cb * penalty_b
         return fitness
 
-    def lagrange_objective(self, coefficient_e, coefficient_b, multiplier_e, multiplier_b):
+    def lagrange_objective(self, ce, cb, le, lb):
         """
         Returns - expected sharpe ratio plus a weight penalty
         :return: the lagrange method objective
@@ -101,10 +101,10 @@ class Portfolio:
         penalty_e = self.get_equality_penalty()
         penalty_b = self.get_boundary_penalty()
         fitness = self.min_objective()
-        fitness += float(coefficient_e/2.0) * penalty_e
-        fitness += float(coefficient_b/2.0) * penalty_b
-        fitness -= multiplier_e * penalty_e
-        fitness -= multiplier_b * penalty_b
+        fitness += float(ce/2.0) * penalty_e
+        fitness += float(cb/2.0) * penalty_b
+        fitness -= le * penalty_e
+        fitness -= lb * penalty_b
         return fitness
 
     def repair(self):
@@ -127,14 +127,14 @@ class Portfolio:
             prices[i + 1] = prices[i] * math.exp(returns[i])
         return prices
 
-    def get_fitness(self, method, coefficient_e=1.0, coefficient_b=1.0, multiplier_e=1.0, multiplier_b=1.0):
+    def get_fitness(self, method, ce, cb, le, lb):
         fitness = self.min_objective()
         if method == "repair":
             fitness = self.repair_objective()
         if method == "penalty":
-            fitness = self.penalty_objective(coefficient_e, coefficient_b)
+            fitness = self.penalty_objective(ce, cb)
         if method == "lagrange":
-            fitness = self.lagrange_objective(coefficient_e, coefficient_b, multiplier_e, multiplier_b)
+            fitness = self.lagrange_objective(ce, cb, le, lb)
         return fitness
 
     def get_equality_penalty(self):
@@ -145,6 +145,4 @@ class Portfolio:
         for w in self.weights:
             if w < 0.0:
                 penalty += abs(w)
-            if w > 1.0:
-                penalty += w - 1.0
         return math.pow(penalty, 2.0)

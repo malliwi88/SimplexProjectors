@@ -24,34 +24,38 @@ class BarebonesOptimizer:
             ones = numpy.ones(self.n)
             self.swarm.append(nrand.dirichlet(ones, 1)[0])
 
-    def get_best(self, objective):
+    def get_best(self, objective, ce, cb, le, lb):
         best_index, best_weights, best_fitness = 0, None, float('+inf')
         for j in range(self.swarm_size):
             portfolio = Portfolio(self.returns, self.corr, self.swarm[j])
-            fitness = portfolio.get_fitness(objective)
+            fitness = portfolio.get_fitness(objective, ce, cb, le, lb)
             if objective == "repair":
                 self.swarm[j] = portfolio.weights
             if fitness < best_fitness:
                 best_weights, best_fitness, best_index = self.swarm[j], fitness, j
         return best_index, best_weights, best_fitness
 
-    def optimize_none(self, iterations):
-        return self.general_update(iterations, "none")
+    def optimize_none(self, iterations, ce, cb, le, lb):
+        return self.general_update(iterations, "none", ce, cb, le, lb)
 
-    def optimize_repair(self, iterations):
-        return self.general_update(iterations, "repair")
+    def optimize_repair(self, iterations, ce, cb, le, lb):
+        return self.general_update(iterations, "repair", ce, cb, le, lb)
 
-    def optimize_lagrange(self, iterations):
-        return self.general_update(iterations, "lagrange")
+    def optimize_penalty(self, iterations, ce, cb, le, lb):
+        return self.general_update(iterations, "penalty", ce, cb, le, lb)
 
-    def optimize_preserving(self, iterations):
-        return self.preserving_update(iterations)
+    def optimize_lagrange(self, iterations, ce, cb, le, lb):
+        return self.general_update(iterations, "lagrange", ce, cb, le, lb)
 
-    def general_update(self, iterations, objective):
+    def optimize_preserving(self, iterations, ce, cb, le, lb):
+        return self.preserving_update(iterations, "preserving", ce, cb, le, lb)
+
+    def general_update(self, iterations, objective, ce, cb, le, lb, q=1.1):
         history = numpy.zeros(iterations)
-        violation = numpy.zeros(iterations)
+        violation_e = numpy.zeros(iterations)
+        violation_b = numpy.zeros(iterations)
         for i in range(iterations):
-            best_index, best_weights, best_fitness = self.get_best(objective)
+            best_index, best_weights, best_fitness = self.get_best(objective, ce, cb, le, lb)
             for j in range(self.swarm_size):
                 if j != best_index:
                     loc = numpy.array((best_weights + self.swarm[j]) / 2.0)
@@ -60,26 +64,32 @@ class BarebonesOptimizer:
                     for k in range(len(best_weights)):
                         velocity[k] = random.normalvariate(loc[k], sig[k])
                     self.swarm[j] = velocity
-            history[i] = best_fitness
-            violation[i] = self.constraint_violation()
-        return history, violation
+            best_portfolio = Portfolio(self.returns, self.corr, best_weights)
+            history[i] = best_portfolio.min_objective()
+            violation_e[i] = best_portfolio.get_boundary_penalty()
+            violation_b[i] = best_portfolio.get_equality_penalty()
+            if objective == "penalty" or objective == "lagrange":
+                ce *= q
+                cb *= q
+        return history, violation_e, violation_b
 
-    def preserving_update(self, iterations, objective="preserving"):
+    def preserving_update(self, iterations, objective, ce, cb, le, lb):
         history = numpy.zeros(iterations)
-        violation = numpy.zeros(iterations)
+        violation_e = numpy.zeros(iterations)
+        violation_b = numpy.zeros(iterations)
         for i in range(iterations):
-            best_index, best_weights, best_fitness = self.get_best(objective)
+            best_index, best_weights, best_fitness = self.get_best(objective, ce, cb, le, lb)
             for j in range(self.swarm_size):
                 if j != best_index:
-                    r = nrand.dirichlet(numpy.ones(self.n), 1)[0] - float(1 / self.n)
-                    velocity = (numpy.array(best_weights - self.swarm[j])/2) + r
+                    r = nrand.dirichlet(numpy.ones(self.n), 1)[0] - float(1/self.n)
+                    velocity = best_weights - self.swarm[j] + r
                     self.swarm[j] += velocity
-            history[i] = best_fitness
-            violation[i] = self.constraint_violation()
-        return history, violation
+                    portfolio = Portfolio(self.returns, self.corr, self.swarm[j])
+                    portfolio.repair()
+                    self.swarm[j] = portfolio.weights
+            best_portfolio = Portfolio(self.returns, self.corr, best_weights)
+            history[i] = best_portfolio.min_objective()
+            violation_e[i] = best_portfolio.get_boundary_penalty()
+            violation_b[i] = best_portfolio.get_equality_penalty()
+        return history, violation_e, violation_b
 
-    def constraint_violation(self):
-        violation = 0.0
-        for i in range(self.swarm_size):
-            violation += 1.0 - sum(self.swarm[i])
-        return violation / self.swarm_size

@@ -23,14 +23,16 @@ def plot_paths(r, sim):
     plt.show()
 
 
-def plot_results(results, labels=None):
-    plt.ylabel("- Sharpe Ratio")
+def plot_results(results, labels, ylabel):
+    plt.style.use("bmh")
+    plt.ylabel(ylabel)
     plt.xlabel("Iterations")
+    linestyles = ['-', '--']
     for i in range(len(results)):
         if labels is None:
             plt.plot(results[i])
         else:
-            plt.plot(results[i], label=labels[i])
+            plt.plot(results[i], label=labels[i], linestyle=linestyles[i % 2], linewidth=2)
     plt.legend(loc="best")
     plt.show()
 
@@ -100,14 +102,16 @@ def plot_surface(X, Y, Z, label):
     plt.show()
 
 
-def runner(n, sigma, delta, mu, time, iterations=30):
+def runner(n, sigma, delta, mu, time, iterations, simulations):
     asset_simulator = AssetSimulator(delta, sigma, mu, time)
 
     Portfolio.memoizer = {}
-    none, lagrange, repair, preserve, ss = [], [], [], [], 25
-    none_v, lagrange_v, repair_v, preserve_v = [], [], [], []
+    none, penalty, lagrange, repair, preserve, ss = [], [], [], [], [], 25
+    none_ve, penalty_ve, lagrange_ve, repair_ve, preserve_ve = [], [], [], [], []
+    none_vb, penalty_vb, lagrange_vb, repair_vb, preserve_vb = [], [], [], [], []
+    ce, cb, le, lb = 2.0, 2.0, 0.5, 0.5
 
-    for i in range(iterations):
+    for i in range(simulations):
         print("Iteration", i, "Simulating Returns ...")
         asset_returns = asset_simulator.assets_returns(n)
         corr = pandas.DataFrame(asset_returns).transpose().corr()
@@ -115,55 +119,112 @@ def runner(n, sigma, delta, mu, time, iterations=30):
 
         print("Iteration", i, "Starting Optimizer ...")
         none_opt = BarebonesOptimizer(ss, asset_returns, corr)
-        result, violation = none_opt.optimize_none(201)
-        none_v.append(violation)
+        result, violation_e, violation_b = none_opt.optimize_none(iterations+1, ce, cb, le, lb)
+        none_ve.append(violation_e)
+        none_vb.append(violation_b)
         none.append(result)
+
+        print("Iteration", i, "Starting Penalty Optimizer ...")
+        lagrange_opt = BarebonesOptimizer(ss, asset_returns, corr)
+        result, violation_e, violation_b = lagrange_opt.optimize_penalty(iterations+1, ce, cb, le, lb)
+        penalty_ve.append(violation_e)
+        penalty_vb.append(violation_b)
+        penalty.append(result)
 
         print("Iteration", i, "Starting Lagrange Optimizer ...")
         lagrange_opt = BarebonesOptimizer(ss, asset_returns, corr)
-        result, violation = lagrange_opt.optimize_lagrange(201)
-        lagrange_v.append(violation)
+        result, violation_e, violation_b = lagrange_opt.optimize_lagrange(iterations+1, ce, cb, le, lb)
+        lagrange_ve.append(violation_e)
+        lagrange_vb.append(violation_b)
         lagrange.append(result)
 
         print("Iteration", i, "Starting Repair Method Optimizer ...")
         repair_opt = BarebonesOptimizer(ss, asset_returns, corr)
-        result, violation = repair_opt.optimize_repair(201)
-        repair_v.append(violation)
+        result, violation_e, violation_b = repair_opt.optimize_repair(iterations+1, ce, cb, le, lb)
+        repair_ve.append(violation_e)
+        repair_vb.append(violation_b)
         repair.append(result)
 
         print("Iteration", i, "Starting Preserving Feasibility Optimizer ...")
         preserve_opt = BarebonesOptimizer(ss, asset_returns, corr)
-        result, violation = preserve_opt.optimize_preserving(201)
-        preserve_v.append(violation)
+        result, violation_e, violation_b = preserve_opt.optimize_preserving(iterations+1, ce, cb, le, lb)
+        preserve_ve.append(violation_e)
+        preserve_vb.append(violation_b)
         preserve.append(result)
 
-    n_r = pandas.DataFrame(none)
-    n_r.to_csv("Results/Results_None_" + str(n) + ".csv")
+    n_r, n_ve, n_vb = pandas.DataFrame(none), pandas.DataFrame(none_ve), pandas.DataFrame(none_vb)
+    r_r, r_ve, r_vb = pandas.DataFrame(repair), pandas.DataFrame(repair_ve), pandas.DataFrame(repair_vb)
+    p_r, p_ve, p_vb = pandas.DataFrame(preserve), pandas.DataFrame(preserve_ve), pandas.DataFrame(preserve_vb)
+    pr_r, pr_ve, pr_vb = pandas.DataFrame(penalty), pandas.DataFrame(penalty_ve), pandas.DataFrame(penalty_vb)
+    l_r, l_ve, l_vb = pandas.DataFrame(lagrange), pandas.DataFrame(lagrange_ve), pandas.DataFrame(lagrange_vb)
 
-    n_v = pandas.DataFrame(none_v)
-    n_v.to_csv("Results/Violations_None_" + str(n) + ".csv")
+    n_r.to_csv("Results/None Fitness.csv")
+    n_ve.to_csv("Results/None Equality.csv")
+    n_vb.to_csv("Results/None Boundary.csv")
 
-    l_r = pandas.DataFrame(lagrange)
-    l_r.to_csv("Results/Results_Lagrange_" + str(n) + ".csv")
+    r_r.to_csv("Results/Repair Fitness.csv")
+    r_ve.to_csv("Results/Repair Equality.csv")
+    r_vb.to_csv("Results/Repair Boundary.csv")
 
-    l_v = pandas.DataFrame(lagrange_v)
-    l_v.to_csv("Results/Violations_Lagrange_" + str(n) + ".csv")
+    p_r.to_csv("Results/Preserve Fitness.csv")
+    p_ve.to_csv("Results/Preserve Equality.csv")
+    p_vb.to_csv("Results/Preserve Boundary.csv")
 
-    r_r = pandas.DataFrame(repair)
-    r_r.to_csv("Results/Results_Repair_" + str(n) + ".csv")
+    pr_r.to_csv("Results/Penalty Fitness.csv")
+    pr_ve.to_csv("Results/Penalty Equality.csv")
+    pr_vb.to_csv("Results/Penalty Boundary.csv")
 
-    r_v = pandas.DataFrame(repair_v)
-    r_v.to_csv("Results/Violations_Repair_" + str(n) + ".csv")
+    l_r.to_csv("Results/Lagrangian Fitness.csv")
+    l_ve.to_csv("Results/Lagrangian Equality.csv")
+    l_vb.to_csv("Results/Lagrangian Boundary.csv")
 
-    p_r = pandas.DataFrame(preserve)
-    p_r.to_csv("Results/Results_Preserve_" + str(n) + ".csv")
+    plot_results([n_r.mean(), r_r.mean(), pr_r.mean(), l_r.mean(), p_r.mean()],
+                 ["Algorithm 1", "Algorithm 2", "Algorithm 3", "Algorithm 4", "Algorithm 5"],
+                 "Average Fitness")
 
-    p_v = pandas.DataFrame(preserve_v)
-    p_v.to_csv("Results/Violations_Preserve_" + str(n) + ".csv")
+    plot_results([n_r.std(), r_r.std(), pr_r.std(), l_r.std(), p_r.std()],
+                 ["Algorithm 1", "Algorithm 2", "Algorithm 3", "Algorithm 4", "Algorithm 5"],
+                 "Fitness Standard Deviation")
 
-    plot_results([n_r.mean(), l_r.mean(), r_r.mean(), p_r.mean()], ["none", "lagrange", "repair", "preserving"])
-    plot_results([n_r.std(), l_r.std(), r_r.std(), p_r.std()], ["none", "lagrange", "repair", "preserving"])
-    plot_results([n_v.std(), l_v.std(), p_v.std()], ["none", "lagrange", "preserving"])
+    plot_results([r_r.mean(), pr_r.mean(), l_r.mean(), p_r.mean()],
+                 ["Algorithm 2", "Algorithm 3", "Algorithm 4", "Algorithm 5"],
+                 "Average Fitness")
+
+    plot_results([r_r.std(), pr_r.std(), l_r.std(), p_r.std()],
+                 ["Algorithm 2", "Algorithm 3", "Algorithm 4", "Algorithm 5"],
+                 "Fitness Standard Deviation")
+
+    plot_results([n_ve.mean(), r_ve.mean(), pr_ve.mean(), l_ve.mean(), p_ve.mean()],
+                 ["Algorithm 1", "Algorithm 2", "Algorithm 3", "Algorithm 4", "Algorithm 5"],
+                 "Average Equality Constraint Violation")
+
+    plot_results([n_ve.std(), r_ve.std(), pr_ve.std(), l_ve.std(), p_ve.std()],
+                 ["Algorithm 1", "Algorithm 2", "Algorithm 3", "Algorithm 4", "Algorithm 5"],
+                 "Equality Constraint Violation Standard Deviation")
+
+    plot_results([n_vb.mean(), r_vb.mean(), pr_vb.mean(), l_vb.mean(), p_vb.mean()],
+                 ["Algorithm 1", "Algorithm 2", "Algorithm 3", "Algorithm 4", "Algorithm 5"],
+                 "Average Boundary Constraint Violation")
+
+    plot_results([n_vb.std(), r_vb.std(), pr_vb.std(), l_vb.std(), p_vb.std()],
+                 ["Algorithm 1", "Algorithm 2", "Algorithm 3", "Algorithm 4", "Algorithm 5"],
+                 "Boundary Constraint Violation Standard Deviation")
+
+    plot_results([r_ve.mean(), pr_ve.mean(), l_ve.mean(), p_ve.mean()],
+                 ["Algorithm 2", "Algorithm 3", "Algorithm 4", "Algorithm 5"],
+                 "Average Equality Constraint Violation")
+
+    plot_results([r_ve.std(), pr_ve.std(), l_ve.std(), p_ve.std()],
+                 ["Algorithm 2", "Algorithm 3", "Algorithm 4", "Algorithm 5"],
+                 "Equality Constraint Violation Standard Deviation")
+
+    plot_results([r_vb.mean(), pr_vb.mean(), l_vb.mean(), p_vb.mean()],
+                 ["Algorithm 2", "Algorithm 3", "Algorithm 4", "Algorithm 5"],
+                 "Average Boundary Constraint Violation")
+
+    plot_results([r_vb.std(), pr_vb.std(), l_vb.std(), p_vb.std()],
+                 ["Algorithm 2", "Algorithm 3", "Algorithm 4", "Algorithm 5"],
+                 "Boundary Constraint Violation Standard Deviation")
 
 
 def surface_plotter(n, sigma, delta, mu, time, c_e, c_b, m_e, m_b):
@@ -174,5 +235,5 @@ def surface_plotter(n, sigma, delta, mu, time, c_e, c_b, m_e, m_b):
 
 
 if __name__ == '__main__':
-    # runner(8, 0.125, float(1/252), 0.08, 250, iterations=5)
-    surface_plotter(2, 0.125, float(1/252), 0.08, 250, 2.0, 2.0, -20.0, -20.0)
+    runner(15, 0.125, float(1/252), 0.08, 500, 100, 55)
+    # surface_plotter(2, 0.125, float(1/252), 0.08, 250, 2.0, 2.0, -20.0, -20.0)
