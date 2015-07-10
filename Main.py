@@ -23,7 +23,7 @@ def plot_paths(r, sim):
     plt.show()
 
 
-def plot_results(results, labels, ylabel):
+def plot_results(results, labels, ylabel, path):
     plt.style.use("bmh")
     plt.ylabel(ylabel)
     plt.xlabel("Iterations")
@@ -34,7 +34,8 @@ def plot_results(results, labels, ylabel):
         else:
             plt.plot(results[i], label=labels[i], linestyle=linestyles[i % 2], linewidth=2)
     plt.legend(loc="best")
-    plt.show()
+    plt.savefig(path)
+    plt.cla()
 
 
 def two_dimensional_landscape(returns, corr_m, size):
@@ -102,7 +103,7 @@ def plot_surface(X, Y, Z, label):
     plt.show()
 
 
-def runner(n, sigma, delta, mu, time, iterations, simulations):
+def runner(n, sigma, delta, mu, time, iterations, simulations, path):
     asset_simulator = AssetSimulator(delta, sigma, mu, time)
 
     Portfolio.memoizer = {}
@@ -158,73 +159,73 @@ def runner(n, sigma, delta, mu, time, iterations, simulations):
     pr_r, pr_ve, pr_vb = pandas.DataFrame(penalty), pandas.DataFrame(penalty_ve), pandas.DataFrame(penalty_vb)
     l_r, l_ve, l_vb = pandas.DataFrame(lagrange), pandas.DataFrame(lagrange_ve), pandas.DataFrame(lagrange_vb)
 
-    n_r.to_csv("Results/None Fitness.csv")
-    n_ve.to_csv("Results/None Equality.csv")
-    n_vb.to_csv("Results/None Boundary.csv")
+    n_r.to_csv(path + "/None Fitness.csv")
+    n_ve.to_csv(path + "/None Equality.csv")
+    n_vb.to_csv(path + "/None Boundary.csv")
 
-    r_r.to_csv("Results/Repair Fitness.csv")
-    r_ve.to_csv("Results/Repair Equality.csv")
-    r_vb.to_csv("Results/Repair Boundary.csv")
+    r_r.to_csv(path + "/Repair Fitness.csv")
+    r_ve.to_csv(path + "/Repair Equality.csv")
+    r_vb.to_csv(path + "/Repair Boundary.csv")
 
-    p_r.to_csv("Results/Preserve Fitness.csv")
-    p_ve.to_csv("Results/Preserve Equality.csv")
-    p_vb.to_csv("Results/Preserve Boundary.csv")
+    p_r.to_csv(path + "/Preserve Fitness.csv")
+    p_ve.to_csv(path + "/Preserve Equality.csv")
+    p_vb.to_csv(path + "/Preserve Boundary.csv")
 
-    pr_r.to_csv("Results/Penalty Fitness.csv")
-    pr_ve.to_csv("Results/Penalty Equality.csv")
-    pr_vb.to_csv("Results/Penalty Boundary.csv")
+    pr_r.to_csv(path + "/Penalty Fitness.csv")
+    pr_ve.to_csv(path + "/Penalty Equality.csv")
+    pr_vb.to_csv(path + "/Penalty Boundary.csv")
 
-    l_r.to_csv("Results/Lagrangian Fitness.csv")
-    l_ve.to_csv("Results/Lagrangian Equality.csv")
-    l_vb.to_csv("Results/Lagrangian Boundary.csv")
+    l_r.to_csv(path + "/Lagrangian Fitness.csv")
+    l_ve.to_csv(path + "/Lagrangian Equality.csv")
+    l_vb.to_csv(path + "/Lagrangian Boundary.csv")
 
     plot_results([n_r.mean(), r_r.mean(), pr_r.mean(), l_r.mean(), p_r.mean()],
                  ["Algorithm 1", "Algorithm 2", "Algorithm 3", "Algorithm 4", "Algorithm 5"],
-                 "Average Fitness")
+                 "Average Fitness", path + "/1")
 
     plot_results([n_r.std(), r_r.std(), pr_r.std(), l_r.std(), p_r.std()],
                  ["Algorithm 1", "Algorithm 2", "Algorithm 3", "Algorithm 4", "Algorithm 5"],
-                 "Fitness Standard Deviation")
+                 "Fitness Standard Deviation", path + "/2")
 
     plot_results([r_r.mean(), pr_r.mean(), l_r.mean(), p_r.mean()],
                  ["Algorithm 2", "Algorithm 3", "Algorithm 4", "Algorithm 5"],
-                 "Average Fitness")
+                 "Average Fitness", path + "/3")
 
     plot_results([r_r.std(), pr_r.std(), l_r.std(), p_r.std()],
                  ["Algorithm 2", "Algorithm 3", "Algorithm 4", "Algorithm 5"],
-                 "Fitness Standard Deviation")
+                 "Fitness Standard Deviation", path + "/4")
 
     plot_results([n_ve.mean(), r_ve.mean(), pr_ve.mean(), l_ve.mean(), p_ve.mean()],
                  ["Algorithm 1", "Algorithm 2", "Algorithm 3", "Algorithm 4", "Algorithm 5"],
-                 "Average Equality Constraint Violation")
+                 "Average Equality Constraint Violation", path + "/5")
 
     plot_results([n_ve.std(), r_ve.std(), pr_ve.std(), l_ve.std(), p_ve.std()],
                  ["Algorithm 1", "Algorithm 2", "Algorithm 3", "Algorithm 4", "Algorithm 5"],
-                 "Equality Constraint Violation Standard Deviation")
+                 "Equality Constraint Violation Standard Deviation", path + "/6")
 
     plot_results([n_vb.mean(), r_vb.mean(), pr_vb.mean(), l_vb.mean(), p_vb.mean()],
                  ["Algorithm 1", "Algorithm 2", "Algorithm 3", "Algorithm 4", "Algorithm 5"],
-                 "Average Boundary Constraint Violation")
+                 "Average Boundary Constraint Violation", path + "/7")
 
     plot_results([n_vb.std(), r_vb.std(), pr_vb.std(), l_vb.std(), p_vb.std()],
                  ["Algorithm 1", "Algorithm 2", "Algorithm 3", "Algorithm 4", "Algorithm 5"],
-                 "Boundary Constraint Violation Standard Deviation")
+                 "Boundary Constraint Violation Standard Deviation", path + "/8")
 
     plot_results([r_ve.mean(), pr_ve.mean(), l_ve.mean(), p_ve.mean()],
                  ["Algorithm 2", "Algorithm 3", "Algorithm 4", "Algorithm 5"],
-                 "Average Equality Constraint Violation")
+                 "Average Equality Constraint Violation", path + "/9")
 
     plot_results([r_ve.std(), pr_ve.std(), l_ve.std(), p_ve.std()],
                  ["Algorithm 2", "Algorithm 3", "Algorithm 4", "Algorithm 5"],
-                 "Equality Constraint Violation Standard Deviation")
+                 "Equality Constraint Violation Standard Deviation", path + "/10")
 
     plot_results([r_vb.mean(), pr_vb.mean(), l_vb.mean(), p_vb.mean()],
                  ["Algorithm 2", "Algorithm 3", "Algorithm 4", "Algorithm 5"],
-                 "Average Boundary Constraint Violation")
+                 "Average Boundary Constraint Violation", path + "/11")
 
     plot_results([r_vb.std(), pr_vb.std(), l_vb.std(), p_vb.std()],
                  ["Algorithm 2", "Algorithm 3", "Algorithm 4", "Algorithm 5"],
-                 "Boundary Constraint Violation Standard Deviation")
+                 "Boundary Constraint Violation Standard Deviation", path + "/12")
 
 
 def surface_plotter(n, sigma, delta, mu, time, c_e, c_b, m_e, m_b):
@@ -235,5 +236,8 @@ def surface_plotter(n, sigma, delta, mu, time, c_e, c_b, m_e, m_b):
 
 
 if __name__ == '__main__':
-    runner(15, 0.125, float(1/252), 0.08, 500, 100, 55)
+    # runner(15, 0.125, float(1/252), 0.08, 500, 100, 55, "Results (1)")
+    runner(10, 0.125, float(1/252), 0.08, 500, 1000, 55, "Results (2)")
+    runner(20, 0.125, float(1/252), 0.08, 500, 1000, 55, "Results (3)")
+    runner(30, 0.125, float(1/252), 0.08, 500, 1000, 55, "Results (4)")
     # surface_plotter(2, 0.125, float(1/252), 0.08, 250, 2.0, 2.0, -20.0, -20.0)
