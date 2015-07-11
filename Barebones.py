@@ -68,9 +68,11 @@ class BarebonesOptimizer:
             history[i] = best_portfolio.min_objective()
             violation_e[i] = best_portfolio.get_boundary_penalty()
             violation_b[i] = best_portfolio.get_equality_penalty()
+            '''
             if objective == "penalty" or objective == "lagrange":
                 ce *= q
                 cb *= q
+            '''
         return history, violation_e, violation_b
 
     def preserving_update(self, iterations, objective, ce, cb, le, lb):
@@ -81,12 +83,11 @@ class BarebonesOptimizer:
             best_index, best_weights, best_fitness = self.get_best(objective, ce, cb, le, lb)
             for j in range(self.swarm_size):
                 if j != best_index:
-                    r = nrand.dirichlet(numpy.ones(self.n), 1)[0] - float(1/self.n)
-                    velocity = best_weights - self.swarm[j] + r
-                    self.swarm[j] += velocity
-                    portfolio = Portfolio(self.returns, self.corr, self.swarm[j])
-                    portfolio.repair()
-                    self.swarm[j] = portfolio.weights
+                    midpoint = self.swarm[j] + (best_weights - self.swarm[j])/2
+                    rand = nrand.dirichlet(midpoint, 1)[0]
+                    p, q = 0.5, 0.5
+                    for k in range(len(self.swarm[j])):
+                        self.swarm[j][k] = (p * midpoint[k]) + (q * rand[k])
             best_portfolio = Portfolio(self.returns, self.corr, best_weights)
             history[i] = best_portfolio.min_objective()
             violation_e[i] = best_portfolio.get_boundary_penalty()

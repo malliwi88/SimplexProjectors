@@ -103,50 +103,45 @@ def plot_surface(X, Y, Z, label):
     plt.show()
 
 
-def runner(n, sigma, delta, mu, time, iterations, simulations, path):
+def runner_all(n, sigma, delta, mu, time, iterations, simulations, path, ce, cb, le, lb):
+    print("Experiment ", path)
     asset_simulator = AssetSimulator(delta, sigma, mu, time)
 
     Portfolio.memoizer = {}
     none, penalty, lagrange, repair, preserve, ss = [], [], [], [], [], 25
     none_ve, penalty_ve, lagrange_ve, repair_ve, preserve_ve = [], [], [], [], []
     none_vb, penalty_vb, lagrange_vb, repair_vb, preserve_vb = [], [], [], [], []
-    ce, cb, le, lb = 2.0, 2.0, 0.5, 0.5
 
     for i in range(simulations):
-        print("Iteration", i, "Simulating Returns ...")
+        print("Simulation ", i)
         asset_returns = asset_simulator.assets_returns(n)
         corr = pandas.DataFrame(asset_returns).transpose().corr()
         # three_dimensional_landscape(asset_returns, corr, 100)
 
-        print("Iteration", i, "Starting Optimizer ...")
         none_opt = BarebonesOptimizer(ss, asset_returns, corr)
         result, violation_e, violation_b = none_opt.optimize_none(iterations+1, ce, cb, le, lb)
         none_ve.append(violation_e)
         none_vb.append(violation_b)
         none.append(result)
 
-        print("Iteration", i, "Starting Penalty Optimizer ...")
         lagrange_opt = BarebonesOptimizer(ss, asset_returns, corr)
         result, violation_e, violation_b = lagrange_opt.optimize_penalty(iterations+1, ce, cb, le, lb)
         penalty_ve.append(violation_e)
         penalty_vb.append(violation_b)
         penalty.append(result)
 
-        print("Iteration", i, "Starting Lagrange Optimizer ...")
         lagrange_opt = BarebonesOptimizer(ss, asset_returns, corr)
         result, violation_e, violation_b = lagrange_opt.optimize_lagrange(iterations+1, ce, cb, le, lb)
         lagrange_ve.append(violation_e)
         lagrange_vb.append(violation_b)
         lagrange.append(result)
 
-        print("Iteration", i, "Starting Repair Method Optimizer ...")
         repair_opt = BarebonesOptimizer(ss, asset_returns, corr)
         result, violation_e, violation_b = repair_opt.optimize_repair(iterations+1, ce, cb, le, lb)
         repair_ve.append(violation_e)
         repair_vb.append(violation_b)
         repair.append(result)
 
-        print("Iteration", i, "Starting Preserving Feasibility Optimizer ...")
         preserve_opt = BarebonesOptimizer(ss, asset_returns, corr)
         result, violation_e, violation_b = preserve_opt.optimize_preserving(iterations+1, ce, cb, le, lb)
         preserve_ve.append(violation_e)
@@ -179,54 +174,6 @@ def runner(n, sigma, delta, mu, time, iterations, simulations, path):
     l_ve.to_csv(path + "/Lagrangian Equality.csv")
     l_vb.to_csv(path + "/Lagrangian Boundary.csv")
 
-    plot_results([n_r.mean(), r_r.mean(), pr_r.mean(), l_r.mean(), p_r.mean()],
-                 ["Algorithm 1", "Algorithm 2", "Algorithm 3", "Algorithm 4", "Algorithm 5"],
-                 "Average Fitness", path + "/1")
-
-    plot_results([n_r.std(), r_r.std(), pr_r.std(), l_r.std(), p_r.std()],
-                 ["Algorithm 1", "Algorithm 2", "Algorithm 3", "Algorithm 4", "Algorithm 5"],
-                 "Fitness Standard Deviation", path + "/2")
-
-    plot_results([r_r.mean(), pr_r.mean(), l_r.mean(), p_r.mean()],
-                 ["Algorithm 2", "Algorithm 3", "Algorithm 4", "Algorithm 5"],
-                 "Average Fitness", path + "/3")
-
-    plot_results([r_r.std(), pr_r.std(), l_r.std(), p_r.std()],
-                 ["Algorithm 2", "Algorithm 3", "Algorithm 4", "Algorithm 5"],
-                 "Fitness Standard Deviation", path + "/4")
-
-    plot_results([n_ve.mean(), r_ve.mean(), pr_ve.mean(), l_ve.mean(), p_ve.mean()],
-                 ["Algorithm 1", "Algorithm 2", "Algorithm 3", "Algorithm 4", "Algorithm 5"],
-                 "Average Equality Constraint Violation", path + "/5")
-
-    plot_results([n_ve.std(), r_ve.std(), pr_ve.std(), l_ve.std(), p_ve.std()],
-                 ["Algorithm 1", "Algorithm 2", "Algorithm 3", "Algorithm 4", "Algorithm 5"],
-                 "Equality Constraint Violation Standard Deviation", path + "/6")
-
-    plot_results([n_vb.mean(), r_vb.mean(), pr_vb.mean(), l_vb.mean(), p_vb.mean()],
-                 ["Algorithm 1", "Algorithm 2", "Algorithm 3", "Algorithm 4", "Algorithm 5"],
-                 "Average Boundary Constraint Violation", path + "/7")
-
-    plot_results([n_vb.std(), r_vb.std(), pr_vb.std(), l_vb.std(), p_vb.std()],
-                 ["Algorithm 1", "Algorithm 2", "Algorithm 3", "Algorithm 4", "Algorithm 5"],
-                 "Boundary Constraint Violation Standard Deviation", path + "/8")
-
-    plot_results([r_ve.mean(), pr_ve.mean(), l_ve.mean(), p_ve.mean()],
-                 ["Algorithm 2", "Algorithm 3", "Algorithm 4", "Algorithm 5"],
-                 "Average Equality Constraint Violation", path + "/9")
-
-    plot_results([r_ve.std(), pr_ve.std(), l_ve.std(), p_ve.std()],
-                 ["Algorithm 2", "Algorithm 3", "Algorithm 4", "Algorithm 5"],
-                 "Equality Constraint Violation Standard Deviation", path + "/10")
-
-    plot_results([r_vb.mean(), pr_vb.mean(), l_vb.mean(), p_vb.mean()],
-                 ["Algorithm 2", "Algorithm 3", "Algorithm 4", "Algorithm 5"],
-                 "Average Boundary Constraint Violation", path + "/11")
-
-    plot_results([r_vb.std(), pr_vb.std(), l_vb.std(), p_vb.std()],
-                 ["Algorithm 2", "Algorithm 3", "Algorithm 4", "Algorithm 5"],
-                 "Boundary Constraint Violation Standard Deviation", path + "/12")
-
 
 def surface_plotter(n, sigma, delta, mu, time, c_e, c_b, m_e, m_b):
     asset_simulator = AssetSimulator(delta, sigma, mu, time)
@@ -236,8 +183,17 @@ def surface_plotter(n, sigma, delta, mu, time, c_e, c_b, m_e, m_b):
 
 
 if __name__ == '__main__':
-    # runner(15, 0.125, float(1/252), 0.08, 500, 100, 55, "Results (1)")
-    runner(10, 0.125, float(1/252), 0.08, 500, 1000, 55, "Results (2)")
-    runner(20, 0.125, float(1/252), 0.08, 500, 1000, 55, "Results (3)")
-    runner(30, 0.125, float(1/252), 0.08, 500, 1000, 55, "Results (4)")
-    # surface_plotter(2, 0.125, float(1/252), 0.08, 250, 2.0, 2.0, -20.0, -20.0)
+    coeff_e, coeff_b, lagrange_e, lagrange_b = 0.5, 0.5, 0.25, 0.25
+    runner_all(5, 0.125, float(1/252), 0.08, 250, 500, 30, "Results (A)", coeff_e, coeff_b, lagrange_e, lagrange_b)
+    runner_all(10, 0.125, float(1/252), 0.08, 250, 500, 30, "Results (B)", coeff_e, coeff_b, lagrange_e, lagrange_b)
+    runner_all(15, 0.125, float(1/252), 0.08, 250, 500, 30, "Results (C)", coeff_e, coeff_b, lagrange_e, lagrange_b)
+
+    coeff_e, coeff_b, lagrange_e, lagrange_b = 1.0, 1.0, 0.5, 0.5
+    runner_all(5, 0.125, float(1/252), 0.08, 250, 500, 30, "Results (D)", coeff_e, coeff_b, lagrange_e, lagrange_b)
+    runner_all(10, 0.125, float(1/252), 0.08, 250, 500, 30, "Results (E)", coeff_e, coeff_b, lagrange_e, lagrange_b)
+    runner_all(15, 0.125, float(1/252), 0.08, 250, 500, 30, "Results (F)", coeff_e, coeff_b, lagrange_e, lagrange_b)
+
+    coeff_e, coeff_b, lagrange_e, lagrange_b = 2.0, 2.0, 1.0, 1.0
+    runner_all(5, 0.125, float(1/252), 0.08, 250, 500, 30, "Results (G)", coeff_e, coeff_b, lagrange_e, lagrange_b)
+    runner_all(10, 0.125, float(1/252), 0.08, 250, 500, 30, "Results (H)", coeff_e, coeff_b, lagrange_e, lagrange_b)
+    runner_all(15, 0.125, float(1/252), 0.08, 250, 500, 30, "Results (I)", coeff_e, coeff_b, lagrange_e, lagrange_b)
