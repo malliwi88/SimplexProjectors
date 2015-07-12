@@ -9,6 +9,7 @@ Particle Swarm Optimization algorithm which uses a preserving feasibility constr
 
 import numpy
 import random
+import io
 import numpy.random as nrand
 from Portfolio import Portfolio
 
@@ -50,7 +51,7 @@ class BarebonesOptimizer:
     def optimize_preserving(self, iterations, ce, cb, le, lb):
         return self.preserving_update(iterations, "preserving", ce, cb, le, lb)
 
-    def general_update(self, iterations, objective, ce, cb, le, lb, q=1.1):
+    def general_update(self, iterations, objective, ce, cb, le, lb, growth_rate=1.1):
         history = numpy.zeros(iterations)
         violation_e = numpy.zeros(iterations)
         violation_b = numpy.zeros(iterations)
@@ -68,11 +69,12 @@ class BarebonesOptimizer:
             history[i] = best_portfolio.min_objective()
             violation_e[i] = best_portfolio.get_boundary_penalty()
             violation_b[i] = best_portfolio.get_equality_penalty()
-            '''
             if objective == "penalty" or objective == "lagrange":
-                ce *= q
-                cb *= q
-            '''
+                ce *= growth_rate
+                cb *= growth_rate
+            if objective == "lagrange":
+                le -= ce * violation_e[i]
+                lb -= cb * violation_b[i]
         return history, violation_e, violation_b
 
     def preserving_update(self, iterations, objective, ce, cb, le, lb):
@@ -84,7 +86,7 @@ class BarebonesOptimizer:
             for j in range(self.swarm_size):
                 if j != best_index:
                     midpoint = self.swarm[j] + (best_weights - self.swarm[j])/2
-                    rand = nrand.dirichlet(midpoint, 1)[0]
+                    rand = nrand.dirichlet(numpy.ones(self.n), 1)[0]
                     p, q = 0.5, 0.5
                     for k in range(len(self.swarm[j])):
                         self.swarm[j][k] = (p * midpoint[k]) + (q * rand[k])
