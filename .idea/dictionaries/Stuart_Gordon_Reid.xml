@@ -3,8 +3,12 @@
     <words>
       <w>barebones</w>
       <w>coeff</w>
+      <w>gbest</w>
       <w>memoize</w>
+      <w>pbest</w>
       <w>penaltym</w>
+      <w>xbest</w>
+      <w>xweights</w>
     </words>
   </dictionary>
 </component>

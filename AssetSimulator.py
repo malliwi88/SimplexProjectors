@@ -3,6 +3,7 @@ __author__ = 'Stuart Gordon Reid'
 
 import math
 import numpy
+import pandas
 import numpy.random as nrand
 
 
@@ -24,22 +25,7 @@ class AssetSimulator:
         return numpy.exp(gbm_process) - numpy.ones(len(gbm_process))
 
     def assets_returns(self, n):
-        returns = []
+        returns = numpy.ones(shape=(n, self.time))
         for i in range(n):
-            returns.append(self.geometric_brownian_motion())
-        return returns
-
-    def asset_prices(self, n, returns=None):
-        if returns is None:
-            returns = self.assets_returns(n)
-        prices = []
-        for asset in returns:
-            prices.append(self.returns_to_prices(asset))
-        return prices
-
-    def returns_to_prices(self, returns):
-        prices = numpy.empty(len(returns) + 1)
-        prices[0] = 100
-        for i in range(len(returns)):
-            prices[i + 1] = prices[i] * (1 + returns[i])
-        return prices
+            returns[i] = self.geometric_brownian_motion()
+        return pandas.DataFrame(returns)

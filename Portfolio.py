@@ -7,14 +7,18 @@ This file contains an implementation of a very simple portfolio optimization pro
 
 import math
 import numpy
+import pandas
+import datetime
+import numpy.random as nrand
+from AssetSimulator import AssetSimulator
 
 
-memoize = False
-memoizer = {}
+# memoize = True
+# memoizer = {}
 
 
 class Portfolio:
-    def __init__(self, asset_returns, corr, weights, r=3):
+    def __init__(self, asset_returns, corr, weights, r=4):
         """
         This method constructs a portfolio
         :param asset_returns: list of numpy vectors of historical / simulated returns
@@ -22,19 +26,21 @@ class Portfolio:
         :param weights: portfolio weights
         """
         self.asset_returns = asset_returns
-        self.n = len(asset_returns)
+        self.n = len(self.asset_returns)
         self.corr = corr
         # Calculate E(r)'s and sigma(r)'s
         self.expected_return = numpy.empty(self.n)
         self.expected_risk = numpy.empty(self.n)
-        for i in range(self.n):
-            # prices = returns_to_prices(asset_returns[i])
-            # self.expected_return[i] = (prices[len(prices) - 1] / prices[0]) - 1
-            self.expected_return[i] = numpy.mean(asset_returns[i])
-            self.expected_risk[i] = numpy.std(asset_returns[i])
-        # Construct the initial weights
-        self.weights = numpy.around(weights, r)
-        self.hash = hash(tuple(self.weights))
+
+        self.expected_return = numpy.array(asset_returns.transpose().mean())
+        self.expected_risk = numpy.array(asset_returns.transpose().std())
+        self.weights = weights
+
+    def update_weights(self, weights):
+        self.weights = weights
+
+    def get_weights(self):
+        return self.weights
 
     def portfolio_return(self):
         """
@@ -43,7 +49,7 @@ class Portfolio:
         """
         return numpy.sum(numpy.dot(self.expected_return, self.weights))
 
-    def portfolio_risk(self):
+    def portfolio_risk_slower(self):
         """
         Calculates the expected risk of the portfolio
         :return: expected risk of the portfolio
@@ -55,6 +61,18 @@ class Portfolio:
                     weights_ij = self.weights[i] * self.weights[j]
                     risks_ij = self.expected_risk[i] * self.expected_risk[j]
                     variance += weights_ij * risks_ij * self.corr[i][j]
+        return math.sqrt(variance)
+
+    def portfolio_risk(self):
+        """
+        Calculates the expected risk of the portfolio
+        :return: expected risk of the portfolio
+        """
+        variance = 0.0
+        for i in range(self.n):
+            w = self.weights[i] * self.weights
+            r = self.expected_risk[i] * self.expected_risk
+            variance += numpy.sum(w * r * self.corr[i])
         return math.sqrt(variance)
 
     def max_objective(self, risk_free_rate=0.00):
@@ -70,16 +88,7 @@ class Portfolio:
         Returns the negative of the max_objective
         :return: - expected sharpe ratio
         """
-        if memoize:
-            try:
-                res = memoizer[self.hash]
-                return res
-            except KeyError:
-                min_opt = -self.max_objective()
-                memoizer[self.hash] = min_opt
-                return min_opt
-        else:
-            return -self.max_objective()
+        return -self.max_objective()
 
     def penalty_objective(self, ce, cb):
         """
@@ -120,13 +129,6 @@ class Portfolio:
         self.repair()
         return self.min_objective()
 
-    def returns_to_prices(self, returns):
-        prices = numpy.empty(len(returns) + 1)
-        prices[0] = 100
-        for i in range(len(returns)):
-            prices[i + 1] = prices[i] * math.exp(returns[i])
-        return prices
-
     def get_fitness(self, method, ce, cb, le, lb):
         fitness = self.min_objective()
         if method == "repair":
@@ -146,3 +148,21 @@ class Portfolio:
             if w < 0.0:
                 penalty += abs(w)
         return math.pow(penalty, 2.0)
+
+
+if __name__ == '__main__':
+    n, delta, sigma, mu, time = 16, float(1/252), 0.125, 0.08, 500
+    asset_simulator = AssetSimulator(delta, sigma, mu, time)
+
+    asset_returns = asset_simulator.assets_returns(n)
+    corr = pandas.DataFrame(asset_returns).transpose().corr()
+    weights = nrand.dirichlet(numpy.ones(n), 1)[0]
+    portfolio = Portfolio(asset_returns, corr, weights)
+
+    t1 = datetime.datetime.now()
+    for j in range(5000):
+        weights = nrand.dirichlet(numpy.ones(n), 1)[0]
+        portfolio.update_weights(weights)
+        r1, r2 = portfolio.portfolio_risk(), portfolio.portfolio_risk_slower()
+    t2 = datetime.datetime.now()
+    print(t2 - t1)

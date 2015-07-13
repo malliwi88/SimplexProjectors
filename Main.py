@@ -10,6 +10,7 @@ import Portfolio
 import cProfile
 import pandas
 import numpy
+import cProfile
 from matplotlib.ticker import LinearLocator, FormatStrFormatter
 
 
@@ -213,9 +214,13 @@ def surface_plotter(n, sigma, delta, mu, time, c_e, c_b, m_e, m_b):
     three_dimensional_landscape(asset_returns, corr, 200, c_e, c_b, m_e, m_b)
 
 
-if __name__ == '__main__':
+def run():
     matplotlib.rc('font', family='Arial')
     coeff_e, coeff_b, lagrange_e, lagrange_b = 2.0, 2.0, 0.5, 0.5
-    # runner_all(4, 0.125, float(1 / 252), 0.08, 250, 250, 60, "Results (A)", coeff_e, coeff_b, lagrange_e, lagrange_b)
-    # runner_all(8, 0.125, float(1 / 252), 0.08, 250, 250, 60, "Results (B)", coeff_e, coeff_b, lagrange_e, lagrange_b)
-    runner_all(16, 0.125, float(1 / 252), 0.08, 250, 250, 60, "Results (D)", coeff_e, coeff_b, lagrange_e, lagrange_b)
+    runner_all(4, 0.125, float(1 / 252), 0.08, 250, 200, 60, "Results (A)", coeff_e, coeff_b, lagrange_e, lagrange_b)
+    runner_all(8, 0.125, float(1 / 252), 0.08, 250, 200, 60, "Results (B)", coeff_e, coeff_b, lagrange_e, lagrange_b)
+    runner_all(16, 0.125, float(1 / 252), 0.08, 250, 200, 60, "Results (C)", coeff_e, coeff_b, lagrange_e, lagrange_b)
+
+
+if __name__ == '__main__':
+    run()
