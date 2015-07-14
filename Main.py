@@ -4,13 +4,10 @@ from AssetSimulator import AssetSimulator
 from Barebones import BarebonesOptimizer
 import matplotlib.pyplot as plt
 from matplotlib import cm
-from mpl_toolkits.mplot3d import Axes3D
 import matplotlib
 import Portfolio
-import cProfile
 import pandas
 import numpy
-import cProfile
 from matplotlib.ticker import LinearLocator, FormatStrFormatter
 
 
@@ -18,19 +15,19 @@ def plot_paths(r, sim):
     """
     This method plots a number of asset paths generated using Geometric Brownian Motion
     """
-    asset_prices = sim.asset_prices(n, returns=r)
+    asset_prices = sim.asset_prices(500, returns=r)
     for p in asset_prices:
         plt.plot(p)
     plt.show()
 
 
 def plot_results(results, labels, ylabel, path):
-    plt.figure(figsize=(10.5, 6.5))
+    plt.figure(figsize=(10.5, 6))
     plt.style.use("grayscaleb")
     plt.ylabel(ylabel)
     plt.xlabel("Iterations")
     linestyles = ['--', ':', '-.', '-']
-    linewidth = [2, 2, 2, 2, 2.5]
+    linewidth = [3.0, 2, 2, 2, 1.5]
     if len(results) == 5:
         for i in range(len(results)):
             plt.plot(results[i], label=labels[i], linestyle=linestyles[i % 4], linewidth=linewidth[i % 5])
@@ -95,7 +92,7 @@ def runner_all(n, sigma, delta, mu, time, iterations, simulations, path, ce, cb,
     asset_simulator = AssetSimulator(delta, sigma, mu, time)
 
     Portfolio.memoizer = {}
-    none, penalty, lagrange, repair, preserve, ss = [], [], [], [], [], 25
+    none, penalty, lagrange, repair, preserve, ss = [], [], [], [], [], 30
     none_ve, penalty_ve, lagrange_ve, repair_ve, preserve_ve = [], [], [], [], []
     none_vb, penalty_vb, lagrange_vb, repair_vb, preserve_vb = [], [], [], [], []
 
@@ -217,9 +214,9 @@ def surface_plotter(n, sigma, delta, mu, time, c_e, c_b, m_e, m_b):
 def run():
     matplotlib.rc('font', family='Arial')
     coeff_e, coeff_b, lagrange_e, lagrange_b = 2.0, 2.0, 0.5, 0.5
-    runner_all(4, 0.125, float(1 / 252), 0.08, 250, 200, 60, "Results (A)", coeff_e, coeff_b, lagrange_e, lagrange_b)
-    runner_all(8, 0.125, float(1 / 252), 0.08, 250, 200, 60, "Results (B)", coeff_e, coeff_b, lagrange_e, lagrange_b)
-    runner_all(16, 0.125, float(1 / 252), 0.08, 250, 200, 60, "Results (C)", coeff_e, coeff_b, lagrange_e, lagrange_b)
+    runner_all(4, 0.125, float(1 / 252), 0.08, 500, 80, 60, "Results (A)", coeff_e, coeff_b, lagrange_e, lagrange_b)
+    runner_all(8, 0.125, float(1 / 252), 0.08, 500, 80, 60, "Results (B)", coeff_e, coeff_b, lagrange_e, lagrange_b)
+    runner_all(16, 0.125, float(1 / 252), 0.08, 500, 80, 60, "Results (C)", coeff_e, coeff_b, lagrange_e, lagrange_b)
 
 
 if __name__ == '__main__':
